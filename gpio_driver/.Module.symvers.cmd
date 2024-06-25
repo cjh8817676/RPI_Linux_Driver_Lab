@@ -1,0 +1,1 @@
+savedcmd_/home/jonat/Desktop/twinkle_led/gpio_driver/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/jonat/Desktop/twinkle_led/gpio_driver/Module.symvers -T /home/jonat/Desktop/twinkle_led/gpio_driver/modules.order -i Module.symvers -e 

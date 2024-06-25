@@ -1,0 +1,20 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2711";
+
+    fragment@0 {
+        target = <&gpio>;
+        __overlay__ {
+            my_gpio17: my_gpio17 {
+                compatible = "gpio-leds";
+                pinctrl-names = "default";
+                gpios = <&gpio 17 0>;
+                linux,default-trigger = "none";
+            };
+        };
+    };
+};
+
+// 0 for active high, 1 for active low
