@@ -23,49 +23,30 @@ static struct file_operations fops = {
 };
 static int gpio_probe(struct platform_device *pdev)
 {
-    int result;
     struct device *dev = &pdev->dev;
+    int ret;
 
-    printk(KERN_INFO "GPIO_DRIVER: Probing the GPIO driver\n");
+    printk(KERN_INFO "GPIO_DRIVER: Probe function called for device: %s\n", dev_name(dev));
 
     gpio_desc = devm_gpiod_get(dev, NULL, GPIOD_OUT_LOW);
     if (IS_ERR(gpio_desc)) {
-        printk(KERN_ERR "GPIO_DRIVER: Failed to get GPIO descriptor\n");
-        return PTR_ERR(gpio_desc);
+        ret = PTR_ERR(gpio_desc);
+        printk(KERN_ERR "GPIO_DRIVER: Failed to get GPIO descriptor, error: %d\n", ret);
+        return ret;
     }
-    printk(KERN_INFO "GPIO_DRIVER: GPIO descriptor obtained\n");
 
-    result = gpiod_direction_output(gpio_desc, 0);
-    if (result) {
-        printk(KERN_ERR "GPIO_DRIVER: Failed to set GPIO direction\n");
-        return result;
+    printk(KERN_INFO "GPIO_DRIVER: GPIO descriptor obtained successfully\n");
+
+    ret = gpiod_direction_output(gpio_desc, 0);
+    if (ret) {
+        printk(KERN_ERR "GPIO_DRIVER: Failed to set GPIO direction, error: %d\n", ret);
+        return ret;
     }
+
     printk(KERN_INFO "GPIO_DRIVER: GPIO direction set to output\n");
 
     return 0;
 }
-// static int gpio_probe(struct platform_device *pdev) {
-//     int result;
-//     struct device *dev = &pdev->dev;
-
-//     printk(KERN_INFO "GPIO_DRIVER: Probing the GPIO driver\n");
-
-//     gpio_desc = devm_gpiod_get(dev, "gpio17", GPIOD_OUT_LOW);
-//     if (IS_ERR(gpio_desc)) {
-//         printk(KERN_ERR "GPIO_DRIVER: Failed to get GPIO descriptor\n");
-//         return PTR_ERR(gpio_desc);
-//     }
-//     printk(KERN_INFO "GPIO_DRIVER: GPIO descriptor obtained\n");
-
-//     result = gpiod_direction_output(gpio_desc, 0);
-//     if (result) {
-//         printk(KERN_ERR "GPIO_DRIVER: Failed to set GPIO direction\n");
-//         return result;
-//     }
-//     printk(KERN_INFO "GPIO_DRIVER: GPIO direction set to output\n");
-
-//     return 0;
-// }
 
 static int gpio_remove(struct platform_device *pdev) {
     gpiod_put(gpio_desc);
@@ -73,7 +54,7 @@ static int gpio_remove(struct platform_device *pdev) {
 }
 
 static const struct of_device_id gpio_of_match[] = {
-    { .compatible = "gpio-leds" },
+    { .compatible = "my,gpio-device" },
     {},
 };
 MODULE_DEVICE_TABLE(of, gpio_of_match);

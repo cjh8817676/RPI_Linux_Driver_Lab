@@ -1,23 +1,27 @@
-## GPIO Linux Driver實作
+## GPIO Linux Driver 實作
 
 **Accessing the GPIO in Linux Kernel**
 
-網路上有很多教學多說: `sudo apt install raspberrypi-kernel-headers` 就可以開發代碼並撰寫Makefile了，但是我遇到了好多坑。 如該[網站1](https://embetronicx.com/tutorials/linux/device-drivers/gpio-driver-basic-using-raspberry-pi/)所描述，已經不適合我的`uname -r`了。[網站1](https://embetronicx.com/tutorials/linux/device-drivers/gpio-driver-basic-using-raspberry-pi/)的範例為Kernel version為5.1.*，
+網路上有很多教學都說：`sudo apt install raspberrypi-kernel-headers` 就可以開發代碼並撰寫 Makefile 了，但是我遇到了很多坑。例如，該[網站1](https://embetronicx.com/tutorials/linux/device-drivers/gpio-driver-basic-using-raspberry-pi/)所描述的方法已經不適合我的 `uname -r` 版本。[網站1](https://embetronicx.com/tutorials/linux/device-drivers/gpio-driver-basic-using-raspberry-pi/) 的範例針對 Kernel 版本為 5.1.*。
 
-所以要使用原碼編譯的方式。完成`raspberrypi-kernel-headers`的正確版本安裝。
+所以我使用原碼編譯的方式，完成 `raspberrypi-kernel-headers` 的正確版本安裝。
 
-查看自身樹莓派的kernel版本，輸入指令`uname -r`
+查看自身樹莓派的 kernel 版本，輸入指令：
+
+```bash
+uname -r
+```
 
 ```makefile
 > uname -r
 6.6.34-v8+
 ```
 
-所以在之後的步驟當中，我需要從官方網站: https://github.com/raspberrypi/linux.git當中git cone下來後，切換分支到`rpi-6.6.y`
+之後的步驟中，我需要從官方網站 https://github.com/raspberrypi/linux.git 中 git clone 下來後，切換分支到 `rpi-6.6.y`。
 
-我的步驟:
+### 我的步驟:
 
-1. Clone the Kernel Source
+1. **Clone the Kernel Source**
 
 ```bash
 cd /usr/src/
@@ -28,7 +32,9 @@ cd linux
 * rpi-6.6.y
 ```
 
-2. Configure the Kernel 安裝完源代碼之後開始進行編譯。
+2. **Configure the Kernel**
+
+安裝完源代碼之後開始進行編譯。
 
 ```bash
 # Copy Default Configuration:
@@ -39,22 +45,22 @@ sudo make bcm2711_defconfig
 sudo make prepare
 sudo make modules_prepare
 
-# 可以產Module.symvers : 這個指令要跑超級久，可以選擇先忽略。跑了也好，一整天沒了。
-# 我自己有跑這個指令，所以我跑完之後有備份整個樹莓派。以防萬一。
+# 可以產生 Module.symvers : 這個指令要跑超級久，可以選擇先忽略。跑了也好，一整天沒了。
+# 我自己有跑這個指令，所以我跑完之後有備份整個樹莓派，以防萬一。
 sudo make modules -j 4 
 ```
 
-3. Build and Install Kernel Headers
+3. **Build and Install Kernel Headers**
 
 ```bash
 sudo make headers_install INSTALL_HDR_PATH=/usr/src/linux-headers-6.6.34-v8+
 ```
 
-1. Build Your Kernel Module
+4. **Build Your Kernel Module**
 
-編寫`gpio_driver.c`和`Makefile`
+編寫 `gpio_driver.c` 和 `Makefile`
 
-Create a new file, for example, `gpio_driver.c`
+在專案位置創建新文件 `gpio_driver.c`：
 
 ```bash
 # 新建專案位置
@@ -66,7 +72,7 @@ cd gpio_driver
 nano gpio_driver.c
 ```
 
-將下列代碼輸入
+將下列代碼輸入 `gpio_driver.c`：
 
 ```c
 #include <linux/module.h>
@@ -94,49 +100,30 @@ static struct file_operations fops = {
 };
 static int gpio_probe(struct platform_device *pdev)
 {
-    int result;
     struct device *dev = &pdev->dev;
+    int ret;
 
-    printk(KERN_INFO "GPIO_DRIVER: Probing the GPIO driver\n");
+    printk(KERN_INFO "GPIO_DRIVER: Probe function called for device: %s\n", dev_name(dev));
 
     gpio_desc = devm_gpiod_get(dev, NULL, GPIOD_OUT_LOW);
     if (IS_ERR(gpio_desc)) {
-        printk(KERN_ERR "GPIO_DRIVER: Failed to get GPIO descriptor\n");
-        return PTR_ERR(gpio_desc);
+        ret = PTR_ERR(gpio_desc);
+        printk(KERN_ERR "GPIO_DRIVER: Failed to get GPIO descriptor, error: %d\n", ret);
+        return ret;
     }
-    printk(KERN_INFO "GPIO_DRIVER: GPIO descriptor obtained\n");
 
-    result = gpiod_direction_output(gpio_desc, 0);
-    if (result) {
-        printk(KERN_ERR "GPIO_DRIVER: Failed to set GPIO direction\n");
-        return result;
+    printk(KERN_INFO "GPIO_DRIVER: GPIO descriptor obtained successfully\n");
+
+    ret = gpiod_direction_output(gpio_desc, 0);
+    if (ret) {
+        printk(KERN_ERR "GPIO_DRIVER: Failed to set GPIO direction, error: %d\n", ret);
+        return ret;
     }
+
     printk(KERN_INFO "GPIO_DRIVER: GPIO direction set to output\n");
 
     return 0;
 }
-// static int gpio_probe(struct platform_device *pdev) {
-//     int result;
-//     struct device *dev = &pdev->dev;
-
-//     printk(KERN_INFO "GPIO_DRIVER: Probing the GPIO driver\n");
-
-//     gpio_desc = devm_gpiod_get(dev, "gpio17", GPIOD_OUT_LOW);
-//     if (IS_ERR(gpio_desc)) {
-//         printk(KERN_ERR "GPIO_DRIVER: Failed to get GPIO descriptor\n");
-//         return PTR_ERR(gpio_desc);
-//     }
-//     printk(KERN_INFO "GPIO_DRIVER: GPIO descriptor obtained\n");
-
-//     result = gpiod_direction_output(gpio_desc, 0);
-//     if (result) {
-//         printk(KERN_ERR "GPIO_DRIVER: Failed to set GPIO direction\n");
-//         return result;
-//     }
-//     printk(KERN_INFO "GPIO_DRIVER: GPIO direction set to output\n");
-
-//     return 0;
-// }
 
 static int gpio_remove(struct platform_device *pdev) {
     gpiod_put(gpio_desc);
@@ -144,7 +131,7 @@ static int gpio_remove(struct platform_device *pdev) {
 }
 
 static const struct of_device_id gpio_of_match[] = {
-    { .compatible = "gpio-leds" },
+    { .compatible = "my,gpio-device" },
     {},
 };
 MODULE_DEVICE_TABLE(of, gpio_of_match);
@@ -226,10 +213,11 @@ MODULE_VERSION("0.1");
 
 module_init(gpio_driver_init);
 module_exit(gpio_driver_exit);
-
 ```
 
-新增並編寫Makefile，原本網站的教程如下:
+新增並編寫 Makefile：
+
+原本網站的教程如下：
 
 ```makefile
 obj-m += gpio_driver.o
@@ -239,7 +227,7 @@ clean:
     make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 ```
 
-實際的Makefile
+實際的 Makefile：
 
 ```makefile
 obj-m += gpio_driver.o
@@ -250,10 +238,10 @@ PWD := $(shell pwd)
 
 # Add standard include paths
 # EXTRA_CFLAGS += -I/usr/include
-EXTRA_CFLAGS += -I/usr/include -I/usr/src/linux-headers-6.6.34-v8+/include
+# EXTRA_CFLAGS += -I/usr/linux/include -I/usr/src/linux-headers-6.6.34-v8+/include 
 
 all:
-	make -C $(KERNELDIR) M=$(PWD) KBUILD_MODPOST_WARN=1 modules
+	make -C $(KERNELDIR) M=$(PWD) modules
 
 clean:
 	make -C $(KERNELDIR) M=$(PWD) clean
@@ -264,9 +252,9 @@ clean:
 
 ![Untitled](./pic/Untitled.png)
 
-4.1 Revisiting the **Driver** and **Device Tree Configuration**(重新審視驅動程式和裝置樹配置)
+### 4.1 Revisiting the **Driver** and **Device Tree Configuration** (重新審視驅動程式和裝置樹配置)
 
-確保**裝置樹**覆蓋正確定義和編譯。於是創建一個`my_gpio17.dts`文件(device tree source)，並輸入以下內容:
+確保**裝置樹**正確定義和編譯。創建一個 `my_gpio17.dts` 文件 (device tree source)，並輸入以下內容：
 
 ```bash
 /dts-v1/;
@@ -279,36 +267,43 @@ clean:
         target = <&gpio>;
         __overlay__ {
             my_gpio17: my_gpio17 {
-                compatible = "gpio-leds";
-                pinctrl-names = "default";
+                gpios = <17 0>;     
+                output-low;
+            };
+        };
+    };
+
+    fragment@1 {
+        target-path = "/";
+        __overlay__ {
+            my_gpio_device: my_gpio_device {
+                compatible = "my,gpio-device";
+                status = "okay";
                 gpios = <&gpio 17 0>;  // 0 for active high, 1 for active low
-                linux,default-trigger = "none";
             };
         };
     };
 };
 ```
 
-編譯設備樹(.dts)並複製overlay：
+編譯設備樹 (.dts) 並複製 overlay：
 
 ```bash
-# 該指令成功不會有任何信息，錯誤會有錯誤信息。
 dtc -@ -I dts -O dtb -o my_gpio17.dtbo my_gpio17.dts
 
 sudo cp my_gpio17.dtbo /boot/overlays/
 ```
 
-我們可以看到`/boot/overlays/` 是一個softlink，他連結到`/boot/firmware/overlays/`
+我們可以看到 `/boot/overlays/` 是一個 softlink，他連結到 `/boot/firmware/overlays/`
 
 ![Untitled](./pic/Untitled2.png)
 
 Add the overlay to `config.txt`:
 
 ```bash
-~~ sudo nano /boot/config.txt ~~
 sudo nano /boot/firmware/config.txt
 
-# 將下面的內容貼上到[all]的下面。
+# 將下面的內容貼上到 [all] 的下面。
 dtoverlay=my_gpio_driver
 ```
 
@@ -320,7 +315,7 @@ sudo reboot
 
 ---
 
-另外要開啟樹莓派的遠端gpio存取。
+另外，要開啟樹莓派的遠端 GPIO 存取：
 
 ```bash
 sudo raspi-config
@@ -328,20 +323,20 @@ sudo raspi-config
 
 ![Untitled](./pic/Untitled3.png)
 
-啟動Remote GPIO 
+啟動 Remote GPIO 
 
 ![Untitled](./pic/Untitled4.png)
 
 ---
 
-最後可以又回到Load Modules指令:
+最後可以又回到 Load Modules 指令：
 
 ```bash
 make clean
 make
 # Unload the existing module:
 sudo rmmod gpio_driver
-# Insert the module into the kernel (**加載驅動程序**)
+# Insert the module into the kernel (加載驅動程序)
 sudo insmod gpio_driver.ko
 # Verify that the module is loaded:
 lsmod | grep gpio_driver
@@ -349,35 +344,44 @@ lsmod | grep gpio_driver
 
 ![Untitled](./pic/Untitled5.png)
 
-5. Check Device Tree Overlay:
+5. **Check Device Tree Overlay**
 
 After rebooting, verify the overlay has been applied:
 
-`<sudo insmod gpio_driver.ko>`**出現錯誤的話，下面指令會可以查看gpio_driver.c裡面打印出的資訊。知道哪部分出錯。**
+如果 `<sudo insmod gpio_driver.ko>` 出現錯誤，下面指令可以查看 `gpio_driver.c` 裡面打印出的資訊，了解哪部分出錯。
 
-```makefile
+```bash
 dmesg | grep -i gpio  
 ```
+輸入上面指令可以得到下圖資訊。要看到有"Probing"、"descriptor obtained"與"GPIO direction set to output"的字樣。 之後才有辦法正確執行。
 
-上面有提到Registered correctly with major number **236**
+![Untitled](./pic/Untitled6.png)
 
-所以下面的major_number改成236。
+上面有提到 Registered correctly with major number **236**，所以下面的 major_number 改成 236。
 
-6. 創建設備節點
+6. **創建設備節點**
 
 ```bash
 > sudo mknod /dev/gpio_driver c <major_number> 0
 > sudo mknod /dev/gpio_driver c 236 0
-> sudo chmod 666 /dev/gpio_driver　#更改權限
-> ls -l /dev/gpio_driver  #查看權限
+> sudo chmod 666 /dev/gpio_driver  # 更改權限
+> ls -l /dev/gpio_driver  # 查看權限
 crw-rw-rw- 1 root root 236, 0 Jun 25 10:13 /dev/gpio_driver
 ```
 
-7. Testing the Driver
+7. **Testing the Driver**
 
-樹莓派原本自己就有gpio的驅動，上面的都是我們的客製化行為。
+使用客製化驅動，操控 GPIO。這就是本實驗客製化 GPIO 驅動的成果。
 
-以拉高與拉低gpio 17 為例子。
+```bash
+echo 1 | sudo tee /dev/gpio_driver  # Set GPIO high
+echo 0 | sudo tee /dev/gpio_driver  # Set GPIO low
+```
+
+
+樹莓派原本自己就有 GPIO 的驅動，上面的都是我們的客製化行為。
+
+以拉高與拉低 GPIO 17 為例子。
 
 ```bash
 > sudo raspi-gpio get 17
@@ -391,12 +395,16 @@ GPIO 17: level=0 func=OUTPUT pull=DOWN
 > echo 529 > /sys/class/gpio/unexport
 ```
 
-使用客製化驅動，操控GPIO。就是本實驗客製化gpio驅動的成果。
 
-```bash
+現在您可以使用標準文件操作與驅動程式互動。成果展示:
 
-echo 1 | sudo tee /dev/gpio_driver  # Set GPIO high
-echo 0 | sudo tee /dev/gpio_driver  # Set GPIO low
+<!DOCTYPE html>
+<html>
+  <body>
+    <video width="640" height="480" controls>
+      <source src="./pic/2a52cce9-c128-4b28-a628-e3d9a763288d.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </body>
+</html>
 ```
-
-現在您可以使用標準文件操作與驅動程式互動。
