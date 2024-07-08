@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/src/linux-headers-6.6.34-v8+/include/",
+                "/usr/src/linux/",
+                "/usr/src/linux/include",
+                "/usr/src/linux/arch/arm/include",
+                "/usr/src/linux/arch/arm64/include",
+                "/usr/src/linux/arch/alpha/include",
+                "/usr/src/linux/arch/s390/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-arm64"
+        }
+    ],
+    "version": 4
+}
