@@ -1,1 +1,0 @@
-savedcmd_/home/jonat/Desktop/RPI_Linux_Driver_Lab/1_chrdevbase/modules.order := {   echo /home/jonat/Desktop/RPI_Linux_Driver_Lab/1_chrdevbase/chrdevbase.o; :; } > /home/jonat/Desktop/RPI_Linux_Driver_Lab/1_chrdevbase/modules.order

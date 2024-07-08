@@ -1,1 +1,0 @@
-savedcmd_/home/jonat/Desktop/RPI_Linux_Driver_Lab/1_chrdevbase/chrdevbase.mod := printf '%s\n'   chrdevbase.o | awk '!x[$$0]++ { print("/home/jonat/Desktop/RPI_Linux_Driver_Lab/1_chrdevbase/"$$0) }' > /home/jonat/Desktop/RPI_Linux_Driver_Lab/1_chrdevbase/chrdevbase.mod
